@@ -1,0 +1,8 @@
+{
+  "name": "placematcher",
+  "private": true,
+  "main": "webpack.config.js",
+  "devDependencies": {
+    "axios": "^0.18.0"
+  }
+}

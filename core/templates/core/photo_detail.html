@@ -3,38 +3,24 @@
 <link rel="stylesheet" href="{% static "vendor/leaflet/leaflet.css" %}"/>
 <link rel="stylesheet" href="{% static "css/photo_detail.css" %}"/>
 
-<div id="app" class="page">
-
-    <div class="map-container">
-
-        <div id="map" style="height: 500px;"></div>
-
-    </div>
-
-    <div class="sidebar">
-
-
-        <h1>
-            {{ object.title }}
-        </h1>
-
-        <div class="photo">
-            <img src="{{ object.pic_url }}">
-        </div>
-
-        <ol class="suggestions">
-            {% for s in object.suggestions.all %}
-                <li data-coords="[{{ s.place.geom.coords|slice:"::-1"|join:"," }}]">
-                    {{ s.place.name }}
-                    {#            {{ s.place.geom.coords }}#}
-                </li>
-            {% endfor %}
-        </ol>
-    </div>
+<div id="app">
 </div>
 
-{#<script src="{% static "vendor/vue.js" %}"></script>#}
-<script src="{% static "vendor/jquery.js" %}"></script>
+{{ view.app_data|json_script:"data" }}
+
+<script src="{% static "vendor/vue.js" %}"></script>
+{#<script src="{% static "vendor/jquery.js" %}"></script>#}
 <script src="{% static "vendor/leaflet/leaflet-src.js" %}"></script>
-<script src="{% static "js/photo_detail.js" %}"></script>
+<script src="{% static "vendor/leaflet.icon.glyph/Leaflet.Icon.Glyph.js" %}"></script>
+<script src="{% static "vendor/vue2-leaflet.min.js" %}"></script>
+<script src="{% static "js/app.js" %}"></script>
+<script>
+	new Vue({
+		el: '#app',
+		template: '<App/>',
+		components: {App}
+	})
+
+</script>
+{#<script src="{% static "js/photo_detail.js" %}"></script>#}
 
