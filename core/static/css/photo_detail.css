@@ -9,6 +9,7 @@
 .sidebar {
     flex: 0 1 auto;
     width: 600px;
+    margin: 6px;
 }
 
 .photo {

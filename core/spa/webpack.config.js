@@ -3,9 +3,12 @@ const VueLoaderPlugin = require('vue-loader/lib/plugin');
 
 module.exports = {
 	mode: 'development',
-	entry: './App.vue',
+	entry: {
+		'home': './Home.vue',
+		'detail': './Detail.vue',
+	},
 	output: {
-		filename: 'app.js',
+		filename: '[name].js',
 		path: path.resolve(__dirname, '../static/js')
 	},
 	module: {
@@ -32,7 +35,6 @@ module.exports = {
 		]
 	},
 	plugins: [
-		// make sure to include the plugin for the magic
-		new VueLoaderPlugin()
+		new VueLoaderPlugin(),
 	]
 };

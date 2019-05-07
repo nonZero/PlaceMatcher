@@ -1,6 +1,8 @@
 {% load staticfiles %}
 
+<link rel="stylesheet" href="{% static "vendor/bulma-rtl.css" %}"/>
 <link rel="stylesheet" href="{% static "vendor/leaflet/leaflet.css" %}"/>
+<link rel="stylesheet" href="{% static "vendor/fontawesome-free/css/all.css" %}"/>
 <link rel="stylesheet" href="{% static "css/photo_detail.css" %}"/>
 
 <div id="app">
@@ -9,11 +11,11 @@
 {{ view.app_data|json_script:"data" }}
 
 <script src="{% static "vendor/vue.js" %}"></script>
-{#<script src="{% static "vendor/jquery.js" %}"></script>#}
+
 <script src="{% static "vendor/leaflet/leaflet-src.js" %}"></script>
 <script src="{% static "vendor/leaflet.icon.glyph/Leaflet.Icon.Glyph.js" %}"></script>
 <script src="{% static "vendor/vue2-leaflet.min.js" %}"></script>
-<script src="{% static "js/app.js" %}"></script>
+<script src="{% static "js/detail.js" %}"></script>
 <script>
 	new Vue({
 		el: '#app',
@@ -22,5 +24,5 @@
 	})
 
 </script>
-{#<script src="{% static "js/photo_detail.js" %}"></script>#}
+
 

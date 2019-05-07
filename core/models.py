@@ -45,6 +45,7 @@ class Photo(models.Model):
     geom = models.PointField(null=True)
     selected_place = models.ForeignKey("Place", on_delete=models.SET_NULL,
                                        related_name="photos", null=True)
+    found_at = models.DateTimeField(null=True)
 
     request_public_help = models.IntegerField(choices=HelpRequest.choices,
                                               null=True, blank=True)
