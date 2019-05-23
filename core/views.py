@@ -1,5 +1,6 @@
 import json
 
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.gis.geos import Point
 from django.db import transaction
 from django.http import HttpResponseBadRequest, JsonResponse
@@ -11,13 +12,13 @@ from django.views.generic import ListView, DetailView
 from core.models import Photo, Suggestion, Place
 
 
-class PhotoListView(ListView):
+class PhotoListView(LoginRequiredMixin, ListView):
     model = Photo
     paginate_by = 25
     ordering = "?"
 
 
-class PhotoDetailView(DetailView):
+class PhotoDetailView(LoginRequiredMixin, DetailView):
     model = Photo
 
     def app_data(self):
@@ -94,7 +95,7 @@ class PhotoDetailView(DetailView):
         return JsonResponse({'success': True})
 
 
-class PhotoListAPIView(View):
+class PhotoListAPIView(LoginRequiredMixin, View):
     def photo_as_dict(self, o: Photo):
         return {
             'id': o.id,
