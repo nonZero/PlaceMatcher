@@ -94,7 +94,7 @@ USE_L10N = True
 USE_TZ = True
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, "collected_static")
+STATIC_ROOT = os.path.join(BASE_DIR, "collected-static")
 
 LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/"

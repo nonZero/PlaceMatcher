@@ -1,3 +1,6 @@
+import warnings
+warnings.filterwarnings(action='ignore',module='.*paramiko.*')
+
 import datetime
 import os
 from fabric import operations
@@ -12,7 +15,7 @@ env.hosts = ["ybz.10x.org.il"]
 
 env.app_name = "ybz"
 env.wsgi_file = "placematcher/wsgi.py"
-env.stats_port = 9000
+env.stats_port = 9100
 env.project = "ybz"
 env.code_dir = f"/home/sysop/{env.project}"
 env.clone_url = "git@github.com:nonZero/PlaceMatcher.git"
@@ -64,6 +67,8 @@ APT_PACKAGES = [
 
     # postgres database
     'postgresql',
+    'postgis',
+    'postgresql-10-postgis-2.4',
 
     'nginx',  # a fast web server
     'uwsgi',  # runs python (django) apps via WSGI
@@ -202,16 +207,16 @@ def create_uwsgi_conf():
 
 
 NGINX_CONF = """
-ssl_ciphers         AES128-SHA:AES256-SHA:RC4-SHA:DES-CBC3-SHA:RC4-MD5;
+# ssl_ciphers         AES128-SHA:AES256-SHA:RC4-SHA:DES-CBC3-SHA:RC4-MD5;
 ssl_session_cache   shared:SSL:10m;
-ssl_session_timeout 10m;
+# ssl_session_timeout 10m;
 ssl_certificate    /home/certbot/conf/live/{host}/fullchain.pem;
 ssl_certificate_key /home/certbot/conf/live/{host}/privkey.pem;
 
-server {{
-   listen 80 default_server;
-   return 404;
-}}
+# server {{
+#    listen 80 default_server;
+#    return 404;
+# }}
 
 server {{
     listen 80;
@@ -219,10 +224,10 @@ server {{
     return 301 https://{host}$request_uri;
 }}
 
-server {{
-   listen 443 ssl default_server;
-   return 404;
-}}
+# server {{
+#    listen 443 ssl default_server;
+#    return 404;
+# }}
 
 server {{
     listen 443 ssl;
@@ -276,7 +281,7 @@ def nginx_log():
 
 @task
 def uwsgi_log(n=50):
-    sudo(f"tail -n {n} /var/log/uwsgi/app/ifx.log")
+    sudo(f"tail -n {n} /var/log/uwsgi/app/*.log")
 
 
 @task
@@ -453,11 +458,11 @@ def install_certbot():
     # sudo("apt-get install -q --reinstall ca-certificates")
     # Source: https://askubuntu.com/questions/429803/cannot-add-ppa-please-check-that-the-ppa-name-or-format-is-correct
 
-    sudo("add-apt-repository ppa:certbot/certbot")
-    sudo("apt-get -qq update", pty=False)
-    sudo("apt-get install -q -y certbot", pty=False)
-
-    sudo("adduser certbot --gecos '' --disabled-password")
+    # sudo("add-apt-repository ppa:certbot/certbot")
+    # sudo("apt-get -qq update", pty=False)
+    # sudo("apt-get install -q -y certbot", pty=False)
+    #
+    # sudo("adduser certbot --gecos '' --disabled-password")
     conf = CERTBOT_INI.format(host=env.host, email=ADMIN_EMAIL)
     filename = '/home/certbot/certbot.ini'
     put(StringIO(conf), filename, use_sudo=True)
