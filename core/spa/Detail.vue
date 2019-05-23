@@ -1,12 +1,44 @@
 <template>
     <div class="page">
-        <div class="map-container">
+        <link rel="preload"
+              href="/static/vendor/leaflet/images/marker-shadow.png"
+              as="image"/>
+        <link rel="preload" href="/static/images/marker-icon-green.png"
+              as="image">
+        <div class="map-container" dir="ltr">
 
-            <l-map :zoom.sync="zoom" :center="center">
+            <l-map :zoom.sync="zoom" :center="center" @click="set_exact_geom">
                 <l-tile-layer :url="url"
                               :attribution="attribution"></l-tile-layer>
+                <l-marker v-if="place" :lat-lng="place.latlng" ref="place">
+                    <l-tooltip :content="place.name"/>
+                </l-marker>
+                <l-marker v-for="(result, index) in search_results"
+                          v-bind:key="result.place_id"
+                          :lat-lng="result.latlng"
+                          :icon="result.icn"
+                          @mouseenter="highlight(result, true)"
+                          @mouseleave="highlight(result, false)"
+                          ref='result'
+                >
+                    <l-icon
+                            :icon="true"
+                            :icon-size="[25, 41]"
+                            :icon-anchor="[12, 41]"
+                            :popup-anchor="[1, -34]"
+                            :shadow-size="[41, 41]"
+                            icon-url="/static/images/glyph-marker-icon-orange.svg"
+                            shadow-url="/static/vendor/leaflet/images/marker-shadow.png"
+                    >
+                        <div class="icon-text">{{ index + 1 }}</div>
+                    </l-icon>
+
+                    <l-tooltip :content="result.display_name"/>
+
+                </l-marker>
                 <l-marker v-for="(marker, index) in markers"
                           v-bind:key="marker.id"
+
                           :lat-lng="marker.latlng"
                           :icon="marker.icon"
                           @mouseenter="highlight(marker, true)"
@@ -24,61 +56,179 @@
                     >
                         <div class="icon-text">{{ index + 1 }}</div>
                     </l-icon>
+
                     <l-tooltip :content="marker.name"/>
 
                 </l-marker>
 
+
+                <l-marker v-if="exact_geom.latlng"
+                          :lat-lng="exact_geom.latlng"
+                          ref='exactMarker'>
+                    <l-icon
+                            :icon="true"
+                            icon-url="/static/images/marker-icon-green.png"
+                            shadow-url="/static/vendor/leaflet/images/marker-shadow.png"/>
+
+                </l-marker>
+                <l-circle v-if="exact_geom.latlng"
+                          :lat-lng="exact_geom.latlng"
+                          :radius="exact_geom.radius"/>
             </l-map>
         </div>
 
         <div class="sidebar">
 
-            <h1>
-                {{ title }}
-            </h1>
-
             <div class="photo">
                 <img :src="pic_url">
             </div>
 
-            <ol class="suggestions panel" v-if="!selectedItem">
-                <a class="panel-block" v-for="(marker, index) in markers"
-                   :class="{ highlighted: marker.highlighted, accepted: marker.accepted }"
-                   @mouseenter="highlight(marker, true)"
-                   @mouseleave="highlight(marker, false)"
-                   :title="marker.score"
-                >
-                    <span @click="click(marker, index)">
-                        {{ marker.name }}
-                    </span>
-                    <i v-if="marker.accepted" class="fas fa-check"></i>
+            <div class="box">
+                <p>
+                    {{ title }}
+                </p>
+            </div>
 
-                    <button class="button is-small"
-                            @click="select(marker, index)">
-                        Select
-                    </button>
-                </a>
-            </ol>
 
-            <div v-if="selectedItem">
-                {{ selectedItem.name }}
-                <div v-if="!saving & !saved">
-                    <button class="button is-primary" @click="save()">
-                        Save
-                    </button>
-                    <button class="button" @click="selectedItem=null">
-                        Cancel
-                    </button>
+            <div class="columns">
+                <div class="column">
+                    <div class="is-pulled-left">
+                        <input type="text" v-model="search_term">
+                        <button class="button"
+                                @click="nominatim_search(search_term)"><i
+                                class="fa fa-search"></i></button>
+                    </div>
+                    <p class="title is-size-5">
+                        ישות
+                    </p>
+
+                    <a class="panel-block has-background-primary" v-if="place">
+                            <span @click="zoom_to(place, 'place')">
+                                {{ place.name }}&nbsp;
+                            </span>
+                        <button class="button is-small"
+                                title="Zoom to this place"
+                                @click="zoom_to(place, 'place')">
+                            <i class="fa fa-search-location"></i>
+                        </button>
+                        <button class="button is-small"
+                                title="Remove"
+                                @click="remove_place()" disabled="1">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                        <a class="button is-small"
+                           :href="osm_url(place.osm_id)" target="_blank"
+                           title="Open in OSM">
+                            <i class="fa fa-map"></i>
+                        </a>
+                    </a>
+
+                    <ol class="suggestions panel" v-if="!saving">
+
+                        <a class="panel-block has-background-warning"
+                           v-for="(result, index) in search_results"
+                           :class="{ highlighted: result.highlighted, accepted: result.accepted }"
+                           @mouseenter="highlight(result, true)"
+                           @mouseleave="highlight(result, false)"
+                           :title="result.tip"
+                        >
+                            <span @click="zoom_to(result, 'result', index)">
+                                <b>{{index + 1}}.</b>
+                                <img :src="result.icon" vg-if="result.icon">
+                                {{ result.display_name }}&nbsp;
+                            </span>
+                            <button class="button is-small"
+                                    title="Zoom to this place"
+                                    @click="zoom_to(result, 'result', index)">
+                                <i class="fa fa-search-location"></i>
+                            </button>
+                            <button class="button is-small"
+                                    title="Add"
+                                    @click="save_result(result)">
+                                <i class="fa fa-save"></i>
+                            </button>
+                            <a class="button is-small"
+                               :href="nominatim_url(result.place_id)"
+                               target="_blank"
+                               title="Open in OSM">
+                                <i class="fa fa-map"></i>
+                            </a>
+                        </a>
+
+                        <a class="panel-block"
+                           v-for="(marker, index) in markers"
+                           :class="{ highlighted: marker.highlighted, accepted: marker.accepted }"
+                           @mouseenter="highlight(marker, true)"
+                           @mouseleave="highlight(marker, false)"
+                           :title="marker.score"
+                        >
+                            <span @click="zoom_to(marker, 'marker', index)">
+                                <b>{{index + 1}}.</b> {{ marker.name }}&nbsp;
+                            </span>
+                            <i v-if="marker.accepted" class="fas fa-check"></i>
+                            &nbsp;
+                            <button class="button is-small"
+                                    title="Zoom to this place"
+                                    @click="zoom_to(marker, 'marker', index)">
+                                <i class="fa fa-search-location"></i>
+                            </button>
+                            <button class="button is-small"
+                                    title="Select and save"
+                                    @click="save_suggestion(marker, index)">
+                                <i class="fa fa-save"></i>
+                            </button>
+                        </a>
+                    </ol>
+                    <div v-else>
+                        שומר...
+                    </div>
                 </div>
-                <div v-else>
-                    <div v-if="!saved">
-                        Saving...
+                <div class="column">
+                    <p class="title">
+                        מיקום מדויק
+                    </p>
+
+                    <div v-if="!saving_exact">
+                        <div v-if="exact_geom.latlng">
+                            {{exact_geom.latlng[0]|round(6)}}:{{exact_geom.latlng[1]|round(6)}}
+                            <input type="number"
+                                   v-model.number="exact_geom.radius"
+                                   step="10" min="0">
+                            <select v-model.number="exact_geom.radius">
+                                <option value="10">10</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                                <option value="250">250</option>
+                                <option value="500">500</option>
+                                <option value="1000">1000</option>
+                                <option value="2500">2500</option>
+                                <option value="5000">5000</option>
+                            </select>
+                            <button class="button"
+                                    @click="remove_exact_geom()"><i
+                                    class="fa fa-trash fa-xs"></i></button>
+                        </div>
+                        <div v-else>
+                            <p>
+                                יש ללחוץ על המפה להוספת מיקום מדויק
+                            </p>
+                        </div>
+                        <div v-if="check_exact_geom()">
+                            <button @click="save_exact_geom()" class="button">
+                                <i class="fa fa-save"></i>
+                            </button>
+                        </div>
                     </div>
                     <div v-else>
-                        Saved!
+                        <p>
+                            Saving...
+                        </p>
                     </div>
+
                 </div>
             </div>
+
         </div>
     </div>
 
@@ -94,18 +244,28 @@
 	};
 
 
-	const {LMap, LTileLayer, LMarker, LTooltip, LPopup, LIcon} = Vue2Leaflet;
+	const {LMap, LTileLayer, LMarker, LTooltip, LPopup, LIcon, LCircle} = Vue2Leaflet;
 
-	const makeIcon = function (n) {
-		return L.icon.glyph({
+	const makeIcon = function (n, opts) {
+		const options = {
 			prefix: '',
 			glyph: n,
 			glyphSize: '14px',
-		});
+			...(opts || {})
+		};
+		return L.icon.glyph(options);
 	};
 
 	window.App = {
-		components: {LMap, LTileLayer, LMarker, LTooltip, LPopup, LIcon},
+		components: {
+			LMap,
+			LTileLayer,
+			LMarker,
+			LTooltip,
+			LPopup,
+			LIcon,
+			LCircle
+		},
 		data() {
 			const appData = JSON.parse(document.getElementById('data').innerHTML);
 
@@ -116,17 +276,24 @@
 				m.tooltip = '';
 			}
 
+			const start = appData.exact_geom.latlng || appData.geom_from_osm;
+
 			return {
 				title: appData.title,
 				pic_url: appData.pic_url,
-				zoom: 7,
-				center: [ 32, 35 ],
+				zoom: start ? 11 : 7,
+				center: start || [ 32, 35 ],
 				url: 'http://{s}.tile.osm.org/{z}/{x}/{y}.png',
 				attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
 				markers: appData.markers,
-				selectedItem: null,
 				saving: false,
-				saved: false,
+				saving_exact: false,
+				exact_geom: appData.exact_geom,
+				original_exact_geom: JSON.stringify(appData.exact_geom),
+				exact_geom_changed: false,
+				search_term: '',
+				search_results: [],
+				place: appData.place,
 			}
 		},
 		methods: {
@@ -134,27 +301,118 @@
 				marker.highlighted = v;
 				marker.tooltip = marker.name;
 			},
-			click(marker, index) {
+			set_exact_geom(event) {
+				if (this.saving_exact) {
+					return
+				}
+				this.exact_geom.latlng = [ event.latlng.lat, event.latlng.lng ];
+				if (!this.exact_geom.radius) {
+					this.exact_geom.radius = 1000
+				}
+				this.check_exact_geom();
+			},
+			remove_exact_geom() {
+				this.exact_geom.latlng = null;
+				this.exact_geom.radius = null;
+				this.check_exact_geom();
+			},
+			check_exact_geom() {
+				this.exact_geom_changed = this.original_exact_geom !== JSON.stringify(this.exact_geom);
+				return this.exact_geom_changed;
+			},
+			zoom_to(marker, ref_name, index = -1) {
 				this.center = marker.latlng;
 				this.zoom = Math.max(16, this.zoom);
-				const m = this.$refs.marker[ index ].mapObject;
-				m.openTooltip();
+				let ref = this.$refs[ ref_name ];
+				if (index > -1) {
+					ref = ref[ index ];
+				}
+				ref.mapObject.openTooltip();
 			},
-			select(marker, index) {
-				this.click(marker, index);
-				this.selectedItem = marker;
-			},
-			save() {
+			async save_suggestion(marker, index) {
+				this.zoom_to(marker, 'marker', index);
 				this.saving = true;
-				axios.post("", {
-					'suggestion': this.selectedItem.id,
-				}).then(x => {
-					console.log(x.data);
-					this.saving = false;
-					this.saved = true;
+				const resp = await axios.post("", {
+					'suggestion': marker.id,
 				});
-			}
+				this.saving = false;
+				this.markers.forEach(function (m) {
+					m.accepted = marker === m;
+				});
+				this.place = {
+					osm_id: marker.osm_id,
+					name: marker.name,
+					latlng: marker.latlng,
+				};
 
+			},
+			save_exact_geom() {
+				this.saving_exact = true;
+				axios.post("", {
+					'exact_geom': this.exact_geom,
+				}).then(x => {
+					this.saving_exact = false;
+					this.original_exact_geom = JSON.stringify(this.exact_geom);
+					this.check_exact_geom();
+				});
+			},
+			async nominatim_search(q) {
+				this.search_results = [];
+				const url = "https://nominatim.openstreetmap.org/search";
+				const resp = await axios.get(url, {
+					params: {
+						q: q,
+						format: 'json',
+						limit: 25,
+						extratags: 1,
+						addressdetails: 1,
+						namedetails: 1,
+						countrycodes: "il,ps",
+						"accept-language": "he",
+					}
+				});
+				this.search_results = resp.data;
+				this.search_results.forEach((o, i) => {
+					o.latlng = L.latLng(o.lat, o.lon);
+					o.ordinal = i + 1;
+					o.icn = makeIcon(o.ordinal, {
+						iconUrl: "/static/images/glyph-marker-icon-orange.svg",
+					});
+					o.highlighted = false;
+					o.tooltip = '';
+					o.tip = `${o.type} ${o.importance.toFixed(2)}`;
+				})
+			},
+			async save_result(result) {
+				this.saving = true;
+				const osm_id = `${result.osm_type}/${result.osm_id}`;
+				const place = {
+					osm_id: osm_id,
+					name: result.namedetails[ 'name:he' ] || result.namedetails[ 'name' ],
+					latlng: [ result.latlng.lat, result.latlng.lng ],
+				};
+				console.log(place);
+				const resp = await axios.post("", {
+					'new_place': place,
+				});
+				this.saving = false;
+				this.place = place;
+				this.place.id = resp.data.id;
+			},
+			osm_url(id) {
+				return "https://www.openstreetmap.org/" + id
+			},
+			nominatim_url(id) {
+				return "https://nominatim.openstreetmap.org/details.php?place_id=" + id
+			}
+		},
+		filters: {
+			round(value, accuracy) {
+				if (typeof value !== 'number') {
+					return value;
+				}
+				return value.toFixed(accuracy).padEnd(9, '0');
+			}
 		}
 	};
 	export default window.App;

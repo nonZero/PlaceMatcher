@@ -1,8 +1,11 @@
 {% load staticfiles %}
-
+<title>
+    {{ object.title }}
+</title>
 <link rel="stylesheet" href="{% static "vendor/bulma-rtl.css" %}"/>
 <link rel="stylesheet" href="{% static "vendor/leaflet/leaflet.css" %}"/>
-<link rel="stylesheet" href="{% static "vendor/fontawesome-free/css/all.css" %}"/>
+<link rel="stylesheet"
+      href="{% static "vendor/fontawesome-free/css/all.css" %}"/>
 <link rel="stylesheet" href="{% static "css/photo_detail.css" %}"/>
 
 <div id="app">
@@ -22,7 +25,6 @@
 		template: '<App/>',
 		components: {App}
 	})
-
 </script>
 
 

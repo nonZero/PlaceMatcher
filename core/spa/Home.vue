@@ -1,21 +1,26 @@
 <template>
     <div>
-        <vuetable ref="vuetable"
-                  :api-mode="false"
-                  :data-manager="dataManager"
-                  :fields="fields"
-                  :show-sort-icons="true"
-        >
-            <div slot="actions" slot-scope="props">
-                <button
-                        class="ui small button"
-                        @click="onActionClicked('edit-item', props.rowData)"
-                >
-                    <i class="fa fa-edit"></i>
-                </button>
-            </div>
+        <div v-show="data.length">
+            <vuetable ref="vuetable"
+                      :api-mode="false"
+                      :data-manager="dataManager"
+                      :fields="fields"
+                      :show-sort-icons="true"
+            >
+                <div slot="actions" slot-scope="props">
+                    <button
+                            class="ui small button"
+                            @click="onActionClicked('edit-item', props.rowData)"
+                    >
+                        <i class="fa fa-edit"></i>
+                    </button>
+                </div>
 
-        </vuetable>
+            </vuetable>
+        </div>
+        <div v-show="!data.length">
+            Loading...
+        </div>
     </div>
 </template>
 
@@ -53,7 +58,7 @@
 			title: 'Place',
 			sortField: 'place',
 		},
-        'actions',
+		'actions',
 	];
 	window.HomeApp = {
 		components: {Vuetable},
@@ -70,9 +75,7 @@
 			}
 		},
 		mounted() {
-			console.log("mount");
 			axios.get("/all.json").then(response => {
-				console.log("ok");
 				this.data = response.data.items;
 			});
 		},
