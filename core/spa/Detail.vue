@@ -80,7 +80,7 @@
         <div class="sidebar">
 
             <div class="photo">
-                <img :src="pic_url">
+                <img :src="pic_url" :alt="title">
             </div>
 
             <div class="box">
@@ -243,7 +243,6 @@
 		'X-Requested-With': 'XMLHttpRequest'
 	};
 
-
 	const {LMap, LTileLayer, LMarker, LTooltip, LPopup, LIcon, LCircle} = Vue2Leaflet;
 
 	const makeIcon = function (n, opts) {
@@ -283,7 +282,7 @@
 				pic_url: appData.pic_url,
 				zoom: start ? 11 : 7,
 				center: start || [ 32, 35 ],
-				url: 'http://{s}.tile.osm.org/{z}/{x}/{y}.png',
+				url: '//{s}.tile.osm.org/{z}/{x}/{y}.png',
 				attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
 				markers: appData.markers,
 				saving: false,

@@ -16,6 +16,6 @@
     "vuetable-2": "^2.0.0-beta.4"
   },
   "scripts": {
-    "watch": "npx webpack -w"
+    "watch": "webpack -w"
   }
 }

@@ -1,12 +1,11 @@
 {% load staticfiles %}
 
 <link rel="stylesheet" href="{% static "vendor/bulma-rtl.css" %}"/>
-<link rel="stylesheet" href="{% static "vendor/fontawesome-free/css/all.css" %}"/>
+<link rel="stylesheet"
+      href="{% static "vendor/fontawesome-free/css/all.css" %}"/>
 
 <div id="home">
 </div>
-
-{#{{ view.app_data|json_script:"data" }}#}
 
 <script src="{% static "vendor/vue.js" %}"></script>
 <script src="{% static "js/home.js" %}"></script>
@@ -14,21 +13,6 @@
 	new Vue({
 		el: '#home',
 		template: '<HomeApp/>',
-		components: {HomeApp}
-	})
-
+		components: {HomeApp},
+	});
 </script>
-
-
-{#<ul>#}
-{#    {% for object in object_list %}#}
-{#        <li>#}
-{#            <a href="{{ object.get_absolute_url }}"#}
-{#               title="{{ object.uid }}">{{ object.title }}</a>#}
-{##}
-{#            <img src="{{ object.pic_thumb_url }}" alt="">#}
-{#        </li>#}
-{#    {% endfor %}#}
-{#</ul>#}
-{##}
-{##}

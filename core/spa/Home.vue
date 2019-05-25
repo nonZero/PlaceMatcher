@@ -25,17 +25,14 @@
 </template>
 
 <script>
-	import Vuetable from 'vuetable-2'
+	import Vuetable from 'vuetable-2';
 
 	import axios from 'axios';
 	import _ from 'lodash';
-	//
-	// axios.defaults.xsrfHeaderName = "X-CSRFToken";
-	// axios.defaults.xsrfCookieName = 'csrftoken';
+
 	axios.defaults.headers.common = {
 		'X-Requested-With': 'XMLHttpRequest'
 	};
-	//
 
 	const fields = [
 		{
