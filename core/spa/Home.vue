@@ -12,7 +12,7 @@
                             class="ui small button"
                             @click="onActionClicked('edit-item', props.rowData)"
                     >
-                        <i class="fa fa-edit"></i>
+                        <fa icon="edit"></fa>
                     </button>
                 </div>
 
@@ -25,14 +25,21 @@
 </template>
 
 <script>
+	import 'bulma-rtl/css/bulma-rtl.css';
+
 	import Vuetable from 'vuetable-2';
 
 	import axios from 'axios';
 	import _ from 'lodash';
+	import {library} from '@fortawesome/fontawesome-svg-core';
+	import {faEdit,} from '@fortawesome/free-solid-svg-icons';
+	import {FontAwesomeIcon} from '@fortawesome/vue-fontawesome';
 
 	axios.defaults.headers.common = {
 		'X-Requested-With': 'XMLHttpRequest'
 	};
+
+	library.add(faEdit);
 
 	const fields = [
 		{
@@ -57,10 +64,13 @@
 		},
 		'actions',
 	];
-	window.HomeApp = {
-		components: {Vuetable},
+
+	export default {
+		components: {
+			Vuetable,
+			fa: FontAwesomeIcon,
+		},
 		data() {
-			// const appData = JSON.parse(document.getElementById('data').innerHTML);
 			return {
 				data: [],
 				fields: fields,
@@ -79,7 +89,6 @@
 
 		methods: {
 			dataManager(sortOrder, pagination) {
-				console.log("DM", this.data.length);
 				if (this.data.length < 1) {
 					return;
 				}
@@ -88,7 +97,6 @@
 
 				// sortOrder can be empty, so we have to check for that as well
 				if (sortOrder.length > 0) {
-					console.log("orderBy:", sortOrder[ 0 ].sortField, sortOrder[ 0 ].direction);
 					local = _.orderBy(
 						local,
 						sortOrder[ 0 ].sortField,
@@ -101,14 +109,10 @@
 				};
 			},
 			onActionClicked(action, row) {
-				console.log("slot actions: on-click", row);
 				open(row.edit_url, "_blank");
 			}
-
-
 		}
 	};
-	export default window.HomeApp;
 
 </script>
 

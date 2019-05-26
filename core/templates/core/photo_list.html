@@ -1,18 +1,5 @@
 {% load staticfiles %}
 
-<link rel="stylesheet" href="{% static "vendor/bulma-rtl.css" %}"/>
-<link rel="stylesheet"
-      href="{% static "vendor/fontawesome-free/css/all.css" %}"/>
+<div id="app"></div>
 
-<div id="home">
-</div>
-
-<script src="{% static "vendor/vue.js" %}"></script>
 <script src="{% static "js/home.js" %}"></script>
-<script>
-	new Vue({
-		el: '#home',
-		template: '<HomeApp/>',
-		components: {HomeApp},
-	});
-</script>

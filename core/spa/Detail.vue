@@ -7,7 +7,8 @@
               as="image">
         <div class="map-container" dir="ltr">
 
-            <l-map :zoom.sync="zoom" :center="center" @click="set_exact_geom">
+            <l-map :zoom.sync="zoom" :center="center" @click="set_exact_geom"
+                   ref="map">
                 <l-tile-layer :url="url"
                               :attribution="attribution"></l-tile-layer>
                 <l-marker v-if="place" :lat-lng="place.latlng" ref="place">
@@ -93,10 +94,13 @@
             <div class="columns">
                 <div class="column">
                     <div class="is-pulled-left">
-                        <input type="text" v-model="search_term">
-                        <button class="button"
-                                @click="nominatim_search(search_term)"><i
-                                class="fa fa-search"></i></button>
+                        <form v-on:submit.prevent="">
+                            <input type="text" v-model="search_term">
+                            <button class="button is-small"
+                                    @click="nominatim_search(search_term)">
+                                <fa icon="search" size="xs"></fa>
+                            </button>
+                        </form>
                     </div>
                     <p class="title is-size-5">
                         ישות
@@ -109,21 +113,40 @@
                         <button class="button is-small"
                                 title="Zoom to this place"
                                 @click="zoom_to(place, 'place')">
-                            <i class="fa fa-search-location"></i>
+                            <fa icon="search-location"></fa>
                         </button>
                         <button class="button is-small"
                                 title="Remove"
                                 @click="remove_place()" disabled="1">
-                            <i class="fa fa-trash"></i>
+                            <fa icon="trash"></fa>
                         </button>
                         <a class="button is-small"
                            :href="osm_url(place.osm_id)" target="_blank"
                            title="Open in OSM">
-                            <i class="fa fa-map"></i>
+                            <fa icon="map"></fa>
                         </a>
                     </a>
 
                     <ol class="suggestions panel" v-if="!saving">
+
+                        <a class="panel-block has-background-warning"
+                           v-if="searching">
+                            Searching...
+                            <fa icon="spinner" spin></fa>
+                        </a>
+
+                        <a class="panel-block has-background-warning"
+                           v-if="search_results">
+                            <div class="is-pulled-right">
+                                <button class="button is-small"
+                                        @click="search_results=null">
+                                    <fa icon="times"></fa>
+                                </button>
+                            </div>
+                            <div class="is-pulled-left">
+                                {{search_results.length}} Results.
+                            </div>
+                        </a>
 
                         <a class="panel-block has-background-warning"
                            v-for="(result, index) in search_results"
@@ -140,18 +163,18 @@
                             <button class="button is-small"
                                     title="Zoom to this place"
                                     @click="zoom_to(result, 'result', index)">
-                                <i class="fa fa-search-location"></i>
+                                <fa icon="search-location"></fa>
                             </button>
                             <button class="button is-small"
                                     title="Add"
                                     @click="save_result(result)">
-                                <i class="fa fa-save"></i>
+                                <fa icon="save"></fa>
                             </button>
                             <a class="button is-small"
                                :href="nominatim_url(result.place_id)"
                                target="_blank"
                                title="Open in OSM">
-                                <i class="fa fa-map"></i>
+                                <fa icon="map"></fa>
                             </a>
                         </a>
 
@@ -165,17 +188,17 @@
                             <span @click="zoom_to(marker, 'marker', index)">
                                 <b>{{index + 1}}.</b> {{ marker.name }}&nbsp;
                             </span>
-                            <i v-if="marker.accepted" class="fas fa-check"></i>
+                            <fa v-if="marker.accepted" icon="check"></fa>
                             &nbsp;
                             <button class="button is-small"
                                     title="Zoom to this place"
                                     @click="zoom_to(marker, 'marker', index)">
-                                <i class="fa fa-search-location"></i>
+                                <fa icon="search-location"></fa>
                             </button>
                             <button class="button is-small"
                                     title="Select and save"
                                     @click="save_suggestion(marker, index)">
-                                <i class="fa fa-save"></i>
+                                <fa icon="save"></fa>
                             </button>
                         </a>
                     </ol>
@@ -206,8 +229,9 @@
                                 <option value="5000">5000</option>
                             </select>
                             <button class="button"
-                                    @click="remove_exact_geom()"><i
-                                    class="fa fa-trash fa-xs"></i></button>
+                                    @click="remove_exact_geom()">
+                                <fa icon="trash" size="xs"></fa>
+                            </button>
                         </div>
                         <div v-else>
                             <p>
@@ -216,7 +240,7 @@
                         </div>
                         <div v-if="check_exact_geom()">
                             <button @click="save_exact_geom()" class="button">
-                                <i class="fa fa-save"></i>
+                                <fa icon="save"></fa>
                             </button>
                         </div>
                     </div>
@@ -235,15 +259,55 @@
 </template>
 
 <script>
+	import {library} from '@fortawesome/fontawesome-svg-core';
+	import {
+		faCheck,
+		faMap,
+		faSave,
+		faSearch,
+		faSearchLocation,
+		faSpinner,
+		faTimes,
+		faTrash,
+	} from '@fortawesome/free-solid-svg-icons';
+	import {FontAwesomeIcon} from '@fortawesome/vue-fontawesome';
+	import {
+		LCircle,
+		LIcon,
+		LMap,
+		LMarker,
+		LPopup,
+		LTileLayer,
+		LTooltip
+	} from 'vue2-leaflet';
+	import L from 'leaflet';
+	import 'leaflet.icon.glyph';
+
 	import axios from 'axios';
+
+	library.add(faSearch);
+	library.add(faSearchLocation);
+	library.add(faSave);
+	library.add(faTrash);
+	library.add(faMap);
+	library.add(faCheck);
+	library.add(faTimes);
+	library.add(faSpinner);
+
+	// eslint-disable-next-line
+	delete L.Icon.Default.prototype._getIconUrl;
+	// eslint-disable-next-line;
+	L.Icon.Default.mergeOptions({
+		iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
+		iconUrl: require('leaflet/dist/images/marker-icon.png'),
+		shadowUrl: require('leaflet/dist/images/marker-shadow.png')
+	});
 
 	axios.defaults.xsrfHeaderName = "X-CSRFToken";
 	axios.defaults.xsrfCookieName = 'csrftoken';
 	axios.defaults.headers.common = {
 		'X-Requested-With': 'XMLHttpRequest'
 	};
-
-	const {LMap, LTileLayer, LMarker, LTooltip, LPopup, LIcon, LCircle} = Vue2Leaflet;
 
 	const makeIcon = function (n, opts) {
 		const options = {
@@ -255,7 +319,7 @@
 		return L.icon.glyph(options);
 	};
 
-	window.App = {
+	export default {
 		components: {
 			LMap,
 			LTileLayer,
@@ -263,7 +327,8 @@
 			LTooltip,
 			LPopup,
 			LIcon,
-			LCircle
+			LCircle,
+			fa: FontAwesomeIcon,
 		},
 		data() {
 			const appData = JSON.parse(document.getElementById('data').innerHTML);
@@ -276,7 +341,6 @@
 			}
 
 			const start = appData.exact_geom.latlng || appData.geom_from_osm;
-
 			return {
 				title: appData.title,
 				pic_url: appData.pic_url,
@@ -291,12 +355,19 @@
 				original_exact_geom: JSON.stringify(appData.exact_geom),
 				exact_geom_changed: false,
 				search_term: '',
-				search_results: [],
+				search_results: null,
 				place: appData.place,
+				loaded: false,
+				searching: false,
 			}
 		},
-		methods: {
-			highlight(marker, v, index) {
+		mounted: function () {
+			this.$nextTick(function () {
+				console.log(1);
+				this.$refs.map.mapObject.invalidateSize();
+			})
+		}, methods: {
+			highlight(marker, v) {
 				marker.highlighted = v;
 				marker.tooltip = marker.name;
 			},
@@ -331,7 +402,7 @@
 			async save_suggestion(marker, index) {
 				this.zoom_to(marker, 'marker', index);
 				this.saving = true;
-				const resp = await axios.post("", {
+				await axios.post("", {
 					'suggestion': marker.id,
 				});
 				this.saving = false;
@@ -345,18 +416,18 @@
 				};
 
 			},
-			save_exact_geom() {
+			async save_exact_geom() {
 				this.saving_exact = true;
-				axios.post("", {
+				await axios.post("", {
 					'exact_geom': this.exact_geom,
-				}).then(x => {
-					this.saving_exact = false;
-					this.original_exact_geom = JSON.stringify(this.exact_geom);
-					this.check_exact_geom();
 				});
+				this.saving_exact = false;
+				this.original_exact_geom = JSON.stringify(this.exact_geom);
+				this.check_exact_geom();
 			},
 			async nominatim_search(q) {
-				this.search_results = [];
+				this.searching = true;
+				this.search_results = null;
 				const url = "https://nominatim.openstreetmap.org/search";
 				const resp = await axios.get(url, {
 					params: {
@@ -370,6 +441,7 @@
 						"accept-language": "he",
 					}
 				});
+				this.searching = false;
 				this.search_results = resp.data;
 				this.search_results.forEach((o, i) => {
 					o.latlng = L.latLng(o.lat, o.lon);
@@ -390,7 +462,6 @@
 					name: result.namedetails[ 'name:he' ] || result.namedetails[ 'name' ],
 					latlng: [ result.latlng.lat, result.latlng.lng ],
 				};
-				console.log(place);
 				const resp = await axios.post("", {
 					'new_place': place,
 				});
@@ -414,11 +485,53 @@
 			}
 		}
 	};
-	export default window.App;
 
 </script>
 
 <style>
+    @import './node_modules/bulma-rtl/css/bulma-rtl.css';
+    @import "./node_modules/leaflet/dist/leaflet.css";
+
+    .page {
+        display: flex;
+    }
+
+    .map-container {
+        flex: 1 1 auto;
+        display: flex;
+    }
+
+    .sidebar {
+        flex: 0 1 auto;
+        width: 600px;
+        margin: 6px;
+        overflow-y: scroll;
+    }
+
+    .photo {
+        padding: 9px;
+        background: #6c6c6c;
+        text-align: center;
+    }
+
+    .photo img {
+        max-width: 100%;
+        max-height: 450px;
+    }
+
+
+    .leaflet-div-icon {
+        background: transparent;
+        border: none;
+    }
+
+    .leaflet-marker-icon .number {
+        position: relative;
+        top: -37px;
+        font-size: 12px;
+        width: 25px;
+        text-align: center;
+    }
 
     .suggestions li.highlighted {
         background: yellow;

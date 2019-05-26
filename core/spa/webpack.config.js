@@ -3,9 +3,14 @@ const VueLoaderPlugin = require('vue-loader/lib/plugin');
 
 module.exports = {
 	mode: 'development',
+	resolve: {
+		alias: {
+			'vue': 'vue/dist/vue.esm.js',
+		},
+	},
 	entry: {
-		'home': './Home.vue',
-		'detail': './Detail.vue',
+		'home': './home_index.js',
+		'detail': './detail_index.js',
 	},
 	output: {
 		filename: '[name].js',
@@ -29,7 +34,17 @@ module.exports = {
 				test: /\.css$/,
 				use: [
 					'vue-style-loader',
-					'css-loader'
+					'css-loader',
+				]
+			}, {
+				test: /\.(png|jpg|gif)$/i,
+				use: [
+					{
+						loader: 'url-loader',
+						options: {
+							limit: 100000
+						}
+					}
 				]
 			}
 		]
@@ -38,3 +53,4 @@ module.exports = {
 		new VueLoaderPlugin(),
 	]
 };
+
