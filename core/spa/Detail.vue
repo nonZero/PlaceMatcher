@@ -85,7 +85,7 @@
             </div>
 
             <div class="box">
-                <p>
+                <p id="photo-title" @mouseup="copy_search_term()">
                     {{ title }}
                 </p>
             </div>
@@ -424,6 +424,13 @@
 				this.saving_exact = false;
 				this.original_exact_geom = JSON.stringify(this.exact_geom);
 				this.check_exact_geom();
+			},
+			copy_search_term() {
+
+				const s = window.getSelection().toString().trim();
+				if (s) {
+					this.search_term = s;
+				}
 			},
 			async nominatim_search(q) {
 				this.searching = true;
