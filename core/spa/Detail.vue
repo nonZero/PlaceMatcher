@@ -9,8 +9,19 @@
 
             <l-map :zoom.sync="zoom" :center="center" @click="set_exact_geom"
                    ref="map">
-                <l-tile-layer :url="url"
-                              :attribution="attribution"></l-tile-layer>
+                <l-control-scale :imperial="false" position="bottomright"/>
+
+                <l-control-layers position="bottomleft"></l-control-layers>
+
+                <l-tile-layer v-for="t in tileLayers"
+                              :key="t.name"
+                              :name="t.name"
+                              :visible="t.visible"
+                              :url="t.url"
+                              :attribution="t.attribution"
+                              layer-type="base"
+
+                ></l-tile-layer>
                 <l-marker v-if="place" :lat-lng="place.latlng" ref="place">
                     <l-tooltip :content="place.name"/>
                 </l-marker>
@@ -273,17 +284,20 @@
 	import {FontAwesomeIcon} from '@fortawesome/vue-fontawesome';
 	import {
 		LCircle,
+		LControlLayers,
+		LControlScale,
 		LIcon,
 		LMap,
 		LMarker,
 		LPopup,
 		LTileLayer,
-		LTooltip
+		LTooltip,
 	} from 'vue2-leaflet';
 	import L from 'leaflet';
 	import 'leaflet.icon.glyph';
 
 	import axios from 'axios';
+	import tileLayers from './tile_layers';
 
 	library.add(faSearch);
 	library.add(faSearchLocation);
@@ -328,6 +342,8 @@
 			LPopup,
 			LIcon,
 			LCircle,
+			LControlLayers,
+			LControlScale,
 			fa: FontAwesomeIcon,
 		},
 		data() {
@@ -359,6 +375,7 @@
 				place: appData.place,
 				loaded: false,
 				searching: false,
+				tileLayers,
 			}
 		},
 		mounted: function () {
@@ -391,8 +408,8 @@
 				return this.exact_geom_changed;
 			},
 			zoom_to(marker, ref_name, index = -1) {
-				this.center = marker.latlng;
 				this.zoom = Math.max(16, this.zoom);
+				this.center = marker.latlng;
 				let ref = this.$refs[ ref_name ];
 				if (index > -1) {
 					ref = ref[ index ];
@@ -400,10 +417,10 @@
 				ref.mapObject.openTooltip();
 			},
 			async save_suggestion(marker, index) {
-				this.zoom_to(marker, 'marker', index);
+				this.zoom_to(marker, "marker", index);
 				this.saving = true;
 				await axios.post("", {
-					'suggestion': marker.id,
+					"suggestion": marker.id,
 				});
 				this.saving = false;
 				this.markers.forEach(function (m) {
